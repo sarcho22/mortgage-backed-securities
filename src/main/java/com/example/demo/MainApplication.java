@@ -1,5 +1,7 @@
 package com.example.demo;
 
+import com.example.demo.model.County;
+
 import java.util.*;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -14,8 +16,10 @@ public class MainApplication {
     private static final String PASSWORD = "project2";
 
     private static final Scanner in = new Scanner(System.in);
+    private static List<County> allCounties;
     public static void main(String[] args) {
         System.out.println("Welcome! [insert some generic msg or we can name this silly app]");
+        allCounties = retrieveCounties();
 
         while(true) {
             displayMenu();
@@ -64,7 +68,7 @@ public class MainApplication {
     // display the menu for the three functionalities
     private static void displayMenu() {
         System.out.println("\n=-=-=-=-=-Main Menu-=-=-=-=-=");
-        System.out.println("Active Filters: ");
+
         //System.out.println("   [insert active filters]");
         displayActiveFilters();
         // need to display which filters are active
@@ -73,6 +77,28 @@ public class MainApplication {
         System.out.println("1. Add Filter\n2. Delete Filter\n3. Calculate Rate\n4. Exit\n");
         System.out.print("Choose an option (enter a number): ");
     }
+
+    private static List<County> retrieveCounties() {
+        List<County> counties = new ArrayList<>();
+
+        String query = "SELECT county_code, county_name FROM county";
+
+        try (Connection conn = DriverManager.getConnection(URL, USERNAME, PASSWORD);
+             PreparedStatement stmt = conn.prepareStatement(query);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                String countyCode = rs.getString("county_code");
+                String countyName = rs.getString("county_name");
+                counties.add(new County(countyCode, countyName));
+            }
+        } catch (SQLException e)
+        {
+            System.err.println("Error fetching counties: " + e.getMessage());
+        }
+        return counties;
+    }
+
 
     private static Map<String, List<String>> currentFilters = new HashMap<>();
 
@@ -105,7 +131,8 @@ public class MainApplication {
                 System.out.println("Added Income to Debt Ratio filter: " + minIncomeToDebtRatio + " to " + maxIncomeToDebtRatio);
                 break;
             case "3":
-                addingSpecFilter("County", "Enter County Name(s), type -1 when the list is complete:");
+                addCountyFilter();
+                //addingSpecFilter("County", "Enter County Name(s), type -1 when the list is complete:");
                 break;
             case "4":
                 addingSpecFilter("Loan Type", "Enter Loan Type(s), type -1 when the list is complete: ");
@@ -135,6 +162,40 @@ public class MainApplication {
         
     }
 
+    private static void addCountyFilter()
+    {
+        if(allCounties.isEmpty()){
+            System.out.println("There are no counties left to select!");
+            return;
+        }
+        System.out.println("Available Counties:");
+        for(int i=0;i<allCounties.size();i++){
+            System.out.println((i)+". "+ allCounties.get(i).getCountyName());
+        }
+        System.out.println("Select counties by their number (separate multiple choices with commas!)");
+        String selection = in.nextLine();
+        String [] selectionIndex = selection.split(",");
+        List<County> temp = new ArrayList<>();
+        List<String> selectedCounties = new ArrayList<>();
+        boolean removed = false;
+        for(int i=0;i<retrieveCounties().size();i++){
+            for (String index : selectionIndex) {
+                if (Integer.parseInt(index)==i) {
+                    selectedCounties.add(allCounties.get(i).getCountyName());
+                    removed = true;
+                }
+            }
+            if(!removed)
+            {
+                temp.add(new County(allCounties.get(i).getCountyCode(), allCounties.get(i).getCountyName()));
+            }
+            removed = false;
+        }
+        allCounties = temp;
+        currentFilters.put("County", selectedCounties);
+
+    }
+
     private static void addingSpecFilter(String filterName, String output) {
         System.out.println(output);
         List<String> filters = new ArrayList<>();
@@ -150,6 +211,7 @@ public class MainApplication {
 
     private static void displayActiveFilters()
     {
+        System.out.println("Active Filters: ");
         if(currentFilters.isEmpty()){
             System.out.println("No active filters");
         }else{
