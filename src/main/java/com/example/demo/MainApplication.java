@@ -65,13 +65,16 @@ public class MainApplication {
     private static void displayMenu() {
         System.out.println("\n=-=-=-=-=-Main Menu-=-=-=-=-=");
         System.out.println("Active Filters: ");
-        System.out.println("   [insert active filters]");
+        //System.out.println("   [insert active filters]");
+        displayActiveFilters();
         // need to display which filters are active
 
         System.out.println("\nAvailable Options:");
         System.out.println("1. Add Filter\n2. Delete Filter\n3. Calculate Rate\n4. Exit\n");
         System.out.print("Choose an option (enter a number): ");
     }
+
+    private static Map<String, List<String>> currentFilters = new HashMap<>();
 
     private static void addFilter() {
         System.out.println("add filter NOT fully implemented (only worked on display, not functionality)...");
@@ -86,13 +89,7 @@ public class MainApplication {
                 // provide a list of msamd with names if they have them, or numbers if there
                 // is no name, the user should be able to pick any one or more of them. (allow list of
                 // acceptable MSAMD)
-                System.out.println("Enter MSAMD(s), type -1 when the list is complete:");
-                String msamd = in.nextLine();
-                while (!msamd.equals("-1")) {
-                    System.out.println("Added MSAMD: " + msamd);
-                    System.out.print("Enter another MSAMD or -1 to finish: ");
-                    msamd = in.nextLine();
-                }
+                addingSpecFilter("MSAMD", "Enter MSAMD(s), type -1 when the list is complete:");
                 break;
             case "2": 
                 // (for this project you can use
@@ -101,59 +98,77 @@ public class MainApplication {
                 double minIncomeToDebtRatio = in.nextDouble();
                 System.out.print("Enter maximum income-to-debt ratio: ");
                 double maxIncomeToDebtRatio = in.nextDouble();
-                System.out.println("Added Income to Debt Ratio range: " + minIncomeToDebtRatio + " to " + maxIncomeToDebtRatio);
+                in.nextLine();
+
+                List<String> filters1 = Arrays.asList(String.valueOf(minIncomeToDebtRatio), String.valueOf(maxIncomeToDebtRatio));
+                currentFilters.put("Income to Debt Ratio", filters1);
+                System.out.println("Added Income to Debt Ratio filter: " + minIncomeToDebtRatio + " to " + maxIncomeToDebtRatio);
                 break;
-            case "3": 
-                System.out.println("Enter County Name(s), type -1 when the list is complete:");
-                String county = in.nextLine();
-                while (!county.equals("-1")) {
-                    System.out.println("Added County: " + county);
-                    System.out.print("Enter another County or -1 to finish: ");
-                    county = in.nextLine();
-                }
+            case "3":
+                addingSpecFilter("County", "Enter County Name(s), type -1 when the list is complete:");
                 break;
             case "4":
-                System.out.println("Enter Loan Type(s), type -1 when the list is complete: ");
-                String loanType = in.nextLine();
-                while (!loanType.equals("-1")) {
-                    System.out.println("Added Loan Type: " + loanType);
-                    System.out.print("Enter another Loan Type or -1 to finish: ");
-                    loanType = in.nextLine();
-                }
+                addingSpecFilter("Loan Type", "Enter Loan Type(s), type -1 when the list is complete: ");
                 break;
             case "5":
                 System.out.print("Enter minimum tract to MSAMD income ratio: ");
                 double minTractRatio = in.nextDouble();
                 System.out.print("Enter maximum tract to MSAMD income ratio: ");
                 double maxTractRatio = in.nextDouble();
-                in.nextLine(); // Consume newline
+                in.nextLine();
+
+                List<String> filters2 = Arrays.asList(String.valueOf(minTractRatio), String.valueOf(maxTractRatio));
+                currentFilters.put("Tract to MSAMD Income", filters2);
                 System.out.println("Added Tract to MSAMD Income range: " + minTractRatio + " to " + maxTractRatio);
                 break;
             
             case "6":
-                System.out.println("Enter Loan Purpose(s), type -1 when the list is complete: ");
-                String loanPurpose = in.nextLine();
-                while (!loanPurpose.equals("-1")) {
-                    System.out.println("Added Loan Purpose: " + loanPurpose);
-                    System.out.print("Enter another Loan Purpose or -1 to finish: ");
-                    loanPurpose = in.nextLine();
-                }
+                addingSpecFilter("Loan Purpose", "Enter Loan Purpose(s), type -1 when the list is complete: ");
                 break;
-            
             case "7":
-                System.out.println("Enter Property Type(s), type -1 when the list is complete: ");
-                String propertyType = in.nextLine();
-                while (!propertyType.equals("-1")) {
-                    System.out.println("Added Property Type: " + propertyType);
-                    System.out.print("Enter another Property Type or -1 to finish: ");
-                    propertyType = in.nextLine();
-                }
+                addingSpecFilter("Property Type", "Enter Property Type(s), type -1 when the list is complete: ");
                 break;
             default:
                 System.out.println("Invalid option!");
                 break;
         }
         
+    }
+
+    private static void addingSpecFilter(String filterName, String output) {
+        System.out.println(output);
+        List<String> filters = new ArrayList<>();
+        String input = in.nextLine();
+        while(!input.equals("-1")){
+            filters.add(input);
+            System.out.println("Enter another " + filterName + " or -1 to finish.");
+            input = in.nextLine();
+        }
+        currentFilters.put(filterName, filters);
+        System.out.println("Added: " + filterName + " filter for: " + String.join(", ",filters));
+    }
+
+    private static void displayActiveFilters()
+    {
+        if(currentFilters.isEmpty()){
+            System.out.println("No active filters");
+        }else{
+            List<String> filterStrings=new ArrayList<>();
+            for (Map.Entry<String, List<String>> entry : currentFilters.entrySet()) {
+                String filterName = entry.getKey();
+                String filterValue = "";
+                if(filterName.equals("Income to Debt Ratio") || filterName.equals("Tract to MSAMD Income")){
+                    filterValue = String.join(" and " , entry.getValue());
+                    filterValue = "between " + filterValue;
+                }
+                else{
+                    filterValue = String.join(" OR " , entry.getValue());
+                }
+                filterStrings.add(filterName + "= " + filterValue);
+
+            }
+            System.out.println(String.join(" AND ", filterStrings));
+        }
     }
 
     private static void deleteFilter() {
