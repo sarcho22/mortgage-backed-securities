@@ -17,11 +17,14 @@ public class MainApplication {
 
     private static final Scanner in = new Scanner(System.in);
     // private static List<County> allCounties;
+    private static final Map<String, String> msamdDict = new HashMap<>();
+
     private static Map<String, List<String>> currentFilters = new HashMap<>();
     private static Map<String, List<String>> allOptions = new HashMap<>();
 
     public static void main(String[] args) {
         initFilterOptions();
+        initDict();
 
         System.out.println("Welcome to the Mortgage Backed Security Packer!");
         // allCounties = retrieveCounties();
@@ -42,7 +45,7 @@ public class MainApplication {
                     calculateRate();
                     break;
                 case "4":
-                    System.out.println("Thank you for using [insert silly app name]. We hope to see you again soon!");
+                    System.out.println("Thank you for using our MBS Packer. We hope to see you again soon!");
                     System.exit(0);
                 default:
                     System.out.println("Invalid option. Please try again (enter a number)!");
@@ -602,5 +605,19 @@ public class MainApplication {
             "Manufactured housing",
             "Multifamily dwelling"
         ));
+    }
+
+    private static void initDict() {
+        msamdDict.put("Allentown, Bethlehem, Easton - PA, NJ", "10900");
+        msamdDict.put("Atlantic City, Hammonton - NJ", "12100");
+        msamdDict.put("Camden - NJ", "15804");
+        msamdDict.put("Newark - NJ, PA", "35084");
+        msamdDict.put("New York, Jersey City, White Plains - NY, NJ", "35614");
+        msamdDict.put("35620", "35620");
+        msamdDict.put("Ocean City - NJ", "36140");
+        msamdDict.put("37980", "37980");
+        msamdDict.put("Trenton - NJ", "45940");
+        msamdDict.put("Vineland, Bridgeton - NJ", "47220");
+        msamdDict.put("Wilmington - DE, MD, NJ", "48864");
     }
 }
