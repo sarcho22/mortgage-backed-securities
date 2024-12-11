@@ -1,7 +1,5 @@
 package com.example.demo;
 
-import com.example.demo.model.County;
-
 import java.util.*;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -16,7 +14,6 @@ public class MainApplication {
     private static final String PASSWORD = "project2";
 
     private static final Scanner in = new Scanner(System.in);
-    // private static List<County> allCounties;
     private static final Map<String, String> msamdDict = new HashMap<>();
 
     private static Map<String, List<String>> currentFilters = new HashMap<>();
@@ -27,7 +24,6 @@ public class MainApplication {
         initDict();
 
         System.out.println("Welcome to the Mortgage Backed Security Packer!");
-        // allCounties = retrieveCounties();
 
         while(true) {
             displayMenu();
@@ -56,12 +52,6 @@ public class MainApplication {
     private static Connection getConnection() {
         try {
             Connection conn = DriverManager.getConnection(URL, USERNAME, PASSWORD);
-            // debugging statements
-            // if (conn != null) {
-            //     System.out.println("Connected to the database!");
-            // } else {
-            //     System.out.println("Failed to make connection!");
-            // }
             return conn;
 
         } catch (SQLException e) {
@@ -86,27 +76,6 @@ public class MainApplication {
         System.out.println("1. Add Filter\n2. Delete Filter\n3. Calculate Rate\n4. Exit\n");
         System.out.print("Choose an option (enter a number): ");
     }
-
-    // private static List<County> retrieveCounties() {
-    //     List<County> counties = new ArrayList<>();
-
-    //     String query = "SELECT county_code, county_name FROM county";
-
-    //     try (Connection conn = DriverManager.getConnection(URL, USERNAME, PASSWORD);
-    //          PreparedStatement stmt = conn.prepareStatement(query);
-    //          ResultSet rs = stmt.executeQuery()) {
-
-    //         while (rs.next()) {
-    //             String countyCode = rs.getString("county_code");
-    //             String countyName = rs.getString("county_name");
-    //             counties.add(new County(countyCode, countyName));
-    //         }
-    //     } catch (SQLException e)
-    //     {
-    //         System.err.println("Error fetching counties: " + e.getMessage());
-    //     }
-    //     return counties;
-    // }
 
     private static void addFilter() {
         // add filter NOT fully implemented (only worked on display, not functionality)
@@ -139,9 +108,6 @@ public class MainApplication {
                 addRangeFilter("Income to Debt Ratio", "Enter minimum income-to-debt ratio:", "Enter maximum income-to-debt ratio:");
                 break;
             case "3":
-
-                // addCountyFilter();
-                // addingSpecFilter("County", "Enter County Name(s), type -1 when the list is complete:");
                 addListFilter("County");
                 break;
             case "4":
@@ -149,11 +115,6 @@ public class MainApplication {
                 addListFilter("Loan Type");
                 break;
             case "5":
-                // System.out.print("Enter minimum tract to MSAMD income ratio: ");
-                // double minTractRatio = in.nextDouble();
-                // System.out.print("Enter maximum tract to MSAMD income ratio: ");
-                // double maxTractRatio = in.nextDouble();
-                // in.nextLine();
 
                 // List<String> filters2 = Arrays.asList(String.valueOf(minTractRatio), String.valueOf(maxTractRatio));
                 // currentFilters.put("Tract to MSAMD Income", filters2);
@@ -267,53 +228,6 @@ public class MainApplication {
         }
     }
 
-    // private static void addCountyFilter()
-    // {
-    //     if(allCounties.isEmpty()){
-    //         System.out.println("There are no counties left to select!");
-    //         return;
-    //     }
-    //     System.out.println("Available Counties:");
-    //     for(int i=0;i<allCounties.size();i++){
-    //         System.out.println((i)+". "+ allCounties.get(i).getCountyName());
-    //     }
-    //     System.out.println("Select counties by their number (separate multiple choices with commas!)");
-    //     String selection = in.nextLine();
-    //     String [] selectionIndex = selection.split(",");
-    //     List<County> temp = new ArrayList<>();
-    //     List<String> selectedCounties = new ArrayList<>();
-    //     boolean removed = false;
-    //     for(int i=0;i<retrieveCounties().size();i++){
-    //         for (String index : selectionIndex) {
-    //             if (Integer.parseInt(index)==i) {
-    //                 selectedCounties.add(allCounties.get(i).getCountyName());
-    //                 removed = true;
-    //             }
-    //         }
-    //         if(!removed)
-    //         {
-    //             temp.add(new County(allCounties.get(i).getCountyCode(), allCounties.get(i).getCountyName()));
-    //         }
-    //         removed = false;
-    //     }
-    //     allCounties = temp;
-    //     currentFilters.put("County", selectedCounties);
-
-    // }
-
-    // private static void addingSpecFilter(String filterName, String output) {
-    //     System.out.println(output);
-    //     List<String> filters = new ArrayList<>();
-    //     String input = in.nextLine();
-    //     while(!input.equals("-1")){
-    //         filters.add(input);
-    //         System.out.println("Enter another " + filterName + " or -1 to finish.");
-    //         input = in.nextLine();
-    //     }
-    //     currentFilters.put(filterName, filters);
-    //     System.out.println("Added: " + filterName + " filter for: " + String.join(", ",filters));
-    // }
-
     private static void displayActiveFilters()
     {
         System.out.println("Active Filters: ");
@@ -377,89 +291,7 @@ public class MainApplication {
         }
     }
 
-    // private static void calculateRate() {
-    //     // NEED TO UPDATE CALCULATE RATE ONCE ADD FILTER IS WORKING!!!
-
-    //     String query = """
-    //         SELECT a.loan_amount_000s, a.rate_spread, a.lien_status, a.application_id
-    //         FROM application a JOIN ActionTaken at ON a.action_taken = at.action_taken
-    //         WHERE at.action_taken = 1 AND a.purchaser_type IN (0, 1, 2, 3, 4, 8);
-    //         """;
-
-    //     try {
-    //         Connection conn = getConnection();
-    //         if(conn == null) {
-    //             System.out.println("Database connection failed...");
-    //             return;
-    //         }
-
-    //         PreparedStatement ps = conn.prepareStatement(query);
-    //         ResultSet rs = ps.executeQuery();
-
-    //         // variables to calculate weighted avg of rates (weighted by loan amt) AND sum of all mortgages as cost of securitization
-    //         double weightedRateSum = 0.0;
-    //         long loanSum = 0;
-
-    //         // making a list of application_ids to know which ones to update if user accepts
-    //         ArrayList<Integer> applicationIds = new ArrayList<>();
-
-    //         while(rs.next()) {
-    //             // multiplied loan amount by 1000s because it was stored in the database in 1000s!!!
-    //             int loanAmount = rs.getInt("loan_amount_000s") * 1000;
-    //             int lienStatus = rs.getInt("lien_status");
-
-    //             double rateSpread = rs.getDouble("rate_spread");
-
-    //             // checked https://docs.oracle.com/javase/8/docs/api/java/sql/ResultSet.html to see how to determine if a value is null
-    //             if(rs.wasNull()) {
-    //                 if(lienStatus == 1) {
-    //                     rateSpread = 1.5;
-    //                 }
-    //                 else{
-    //                     rateSpread = 3.5;
-    //                 }
-
-    //             }
-
-    //             rateSpread += 2.33; // account for base rate!!
-
-    //             loanSum += loanAmount;
-    //             weightedRateSum += rateSpread * loanAmount;
-
-    //             applicationIds.add(rs.getInt("application_id"));
-    //         }
-
-    //         if(loanSum > 0) { // just to make sure no division by 0
-    //             // to fully understand how the weighted avg rate works, i used this site:
-    //             // https://www.savingforcollege.com/article/how-to-calculate-the-weighted-average-interest-rate
-    //             double weightedRateAvg = weightedRateSum / loanSum;
-    //             System.out.println("\n=-=-=-=-Rate Calculation-=-=-=-=");
-    //             System.out.printf("   Total Loan Amount: %d\n   Weighted Average Rate: %.3f\n", loanSum, weightedRateAvg);
-
-    //             System.out.print("\nDo you accept this rate? (yes/no): ");
-    //             String response = in.nextLine().trim().toLowerCase();
-
-    //             if(response.equals("yes")) {
-    //                 updateDatabase(conn, applicationIds);
-    //             }
-    //             else if(response.equals("no")) {
-    //                 System.out.println("Rate declined. Returning to main menu.\n\n");
-    //             }
-    //         }
-    //         else if(loanSum < 0) {
-    //             System.out.println("Integer Overflow Error!");
-    //         }
-    //         else {
-    //             System.out.println("No matching mortgages found.");
-    //         }
-
-    //     } catch (Exception e) {
-    //         System.err.println("An error occurred during rate calculation: " + e.getMessage());
-    //         e.printStackTrace();
-    //     }
-    // }
     private static void calculateRate() {
-        // FIX ONCE REST OF FILTERS ARE DONE
 		StringBuilder finalQuery = new StringBuilder(
                 "SELECT Application.loan_amount_000s, Application.rate_spread, Application.lien_status, Application.application_id " +
                         "FROM Application " +
@@ -472,26 +304,63 @@ public class MainApplication {
                         "LEFT JOIN County ON Location.county_code = County.county_code " +
                         "LEFT JOIN MSAMD ON Location.msamd = MSAMD.msamd " +
                         "LEFT JOIN PurchaserType ON Application.purchaser_type = PurchaserType.purchaser_type " +
+                        "LEFT JOIN Applicant ON Application.application_id = Applicant.application_id " +
                         "WHERE ActionTaken.action_taken_name = 'Loan originated' AND PurchaserType.purchaser_type IN (0, 1, 2, 3, 4, 8) "
         );
 
         for(String key : currentFilters.keySet()) {
             finalQuery.append("AND (");
             List<String> choices = currentFilters.get(key);
-            for (int i = 0; i < choices.size(); i++)
-            {
+            for(int i = 0; i < choices.size(); i++) {
                 String keyVal = key;
-                if(key.equals("County")|| key.equals("Loan Type") || key.equals("Loan Purpose") || key.equals("Property Type"))
-                {
+                if(key.equals("County")|| key.equals("Loan Type") || key.equals("Loan Purpose") || key.equals("Property Type")) {
                     keyVal = keyVal.replaceAll("\\s+", "_") + "_name";
+                    finalQuery.append(keyVal).append(" = ? ");
+                    if(i < choices.size()-1) {
+                        finalQuery.append("OR ");
+                    }
                 }
                 if(key.equals("MSAMD")) {
                     keyVal = "Location.msamd";
+                    finalQuery.append(keyVal).append(" = ? ");
+                    if(i < choices.size()-1) {
+                        finalQuery.append("OR ");
+                    }
                 }
-                finalQuery.append(keyVal).append(" = ? ");
-                if(i < choices.size() - 1)
-                {
-                    finalQuery.append("OR ");
+                if(key.equals("Tract to MSAMD Income")) {
+                    keyVal = "(Location.tract_to_msamd_income::numeric)";
+                    if(i == 0) {
+                        finalQuery.append(keyVal).append(" BETWEEN ? ");
+                    }
+                    // checking even/odd because code is structured so that
+                    // we can check multiple ranges if needed
+                    else if((i % 2) == 1) {
+                        finalQuery.append("AND ? ");
+                        if(i < choices.size() - 1) {
+                            finalQuery.append("OR ");
+                        }
+                    }
+                    else if((i % 2) == 0) {
+                        finalQuery.append("? ");
+                    }
+                }
+                if(key.equals("Income to Debt Ratio")) {
+                    keyVal = "(applicant.applicant_income_000s / application.loan_amount_000s)";
+                    if(i == 0) {
+                        finalQuery.append(keyVal).append(" BETWEEN ? ");
+                    }
+
+                    // checking even/odd because code is structured so that
+                    // we can check multiple ranges if needed
+                    else if((i % 2) == 1) {
+                        finalQuery.append("AND ? ");
+                        if(i < choices.size() - 1) {
+                            finalQuery.append("OR ");
+                        }
+                    }
+                    else if((i % 2) == 0) {
+                        finalQuery.append("? ");
+                    }
                 }
             }
             finalQuery.append(") ");
@@ -519,9 +388,14 @@ public class MainApplication {
                         stmt.setString(index++, msamd_code);
                     }
                 }
+                else if(key.equals("Tract to MSAMD Income") || key.equals("Income to Debt Ratio")) {
+                    for(String value : choices) {
+                        double converted = Double.parseDouble(value);
+                        stmt.setDouble(index++, converted);
+                    }
+                }
                 else {
-                    for(String value : choices)
-                    {
+                    for(String value : choices) {
                         stmt.setString(index++, value);
                     }
                 }
@@ -574,6 +448,8 @@ public class MainApplication {
 
                 if(response.equals("yes")) {
                     updateDatabase(conn, applicationIDs);
+                    System.out.println("Thank you for using our MBS Packer. We hope to see you again soon!");
+                    System.exit(0);
                 }
                 else if(response.equals("no")) {
                     System.out.println("Rate declined. Returning to main menu.\n\n");
@@ -623,9 +499,9 @@ public class MainApplication {
                 }
             }
 
-            System.out.printf("Updated %d loans to 'Private Securitization'.\n", count);
+            System.out.printf("Successfully updated %d loans to 'Private Securitization'!\n", count);
             if(!failed.isEmpty()) {
-                System.err.println("Failed to update the following application IDsP: " + failed);
+                System.err.println("Failed to update the following application IDs: " + failed);
             }
 
         } catch (SQLException e) {
@@ -764,10 +640,10 @@ public class MainApplication {
             ResultSet rs = statement.executeQuery();
             if(rs.next()) {
                 int matchingRows = rs.getInt("total_rows");
-                double totalLoanAmount = rs.getDouble("total_loan_amount");
+                double totalLoanAmount = rs.getDouble("total_loan_amount") * 1000;
 
                 System.out.println("\nMatching Rows: " + matchingRows);
-                System.out.println("Total Loan Amount: " + totalLoanAmount);
+                System.out.println("Total Loan Amount: " + (int)(totalLoanAmount));
             }
         }
         catch (SQLException e) {
