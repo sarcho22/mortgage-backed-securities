@@ -27,6 +27,7 @@ public class MainApplication {
         // allCounties = retrieveCounties();
 
         while(true) {
+            buildingFinalQuery();
             displayMenu();
             String option = in.nextLine();
             
@@ -459,6 +460,89 @@ public class MainApplication {
         } catch (SQLException e) {
             System.err.println("Failed to update database: " + e.getMessage());
         }
+    }
+
+    private static String buildingFinalQuery()
+    {
+        /*
+        Couple of issues:
+        1. The key values as we store them in currentFilters don't line up with column names
+        2. While we can fix this with an if statement as seen below, it doesnt work for MSAMD
+           MSAMD is a mix of 2 columns, so you would need to dynamically alter which column goes in the query.
+        3. income to debt ratio and tract to msamd income need to be considered as separate cases bc
+           they use between and also we need to calculate income to debt ratio.
+        4. We're still missing the 8th filter.
+         */
+
+
+
+        StringBuilder finalQuery = new StringBuilder(
+                "SELECT COUNT(*) AS total_rows, SUM(Application.loan_amount_000s) AS total_loan_amount " +
+                        "FROM Application " +
+                        "LEFT JOIN LoanType ON Application.loan_type = LoanType.loan_type " +
+                        "LEFT JOIN PropertyType ON Application.property_type = PropertyType.property_type " +
+                        "LEFT JOIN LoanPurpose ON Application.loan_purpose = LoanPurpose.loan_purpose " +
+                        "LEFT JOIN OwnerOccupancy ON Application.owner_occupancy = OwnerOccupancy.owner_occupancy " +
+                        "LEFT JOIN ActionTaken ON Application.action_taken = ActionTaken.action_taken " +
+                        "LEFT JOIN Location ON Application.application_id = Location.application_id " +
+                        "LEFT JOIN County ON Location.county_code = County.county_code " +
+                        "LEFT JOIN MSAMD ON Location.msamd = MSAMD.msamd " +
+                        "WHERE ActionTaken.action_taken_name = 'Loan originated' "
+        );
+
+        for (String key : currentFilters.keySet())
+        {
+            finalQuery.append("AND (");
+            List<String> choices = currentFilters.get(key);
+            //Need specific if/else case. If it is a filter for
+            //tract income or debt ratio cuz it needs to be between
+            for (int i = 0;i<choices.size();i++)
+            {
+                String keyVal = key;
+                if(key.equals("County")|| key.equals("Loan Type") || key.equals("Loan Purpose") || key.equals("Property Type"))
+                {
+                    keyVal = keyVal.replaceAll("\\s+", "_") + "_name";
+                }
+                finalQuery.append(keyVal).append(" = ? ");
+                if(i<choices.size() - 1)
+                {
+                    finalQuery.append("OR ");
+                }
+            }
+            finalQuery.append(") ");
+        }
+        finalQuery.append(";");
+        //System.out.println("Final Query: " + finalQuery);
+
+        int index = 1;
+        String tempString = finalQuery.toString();
+
+        try(Connection tempConnection = DriverManager.getConnection(URL,USERNAME,PASSWORD)){
+            PreparedStatement statement = tempConnection.prepareStatement(tempString);
+            for(String key : currentFilters.keySet())
+            {
+                List<String> choices = currentFilters.get(key);
+                for(String value : choices)
+                {
+                    statement.setString(index++,value);
+                }
+            }
+            //System.out.println(statement.toString());
+            ResultSet rs = statement.executeQuery();
+            if(rs.next()) {
+                int matchingRows = rs.getInt("total_rows");
+                double totalLoanAmount = rs.getDouble("total_loan_amount");
+
+                System.out.println("Matching Rows: " + matchingRows);
+                System.out.println(" Total Loan Amount: " + totalLoanAmount);
+            }
+        }
+        catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+
     }
 
     private static void initFilterOptions() {
