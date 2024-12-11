@@ -490,7 +490,8 @@ public class MainApplication {
                         "LEFT JOIN Location ON Application.application_id = Location.application_id " +
                         "LEFT JOIN County ON Location.county_code = County.county_code " +
                         "LEFT JOIN MSAMD ON Location.msamd = MSAMD.msamd " +
-                        "WHERE ActionTaken.action_taken_name = 'Loan originated' "
+                        "LEFT JOIN PurchaserType ON Application.purchaser_type = PurchaserType.purchaser_type " +
+                        "WHERE ActionTaken.action_taken_name = 'Loan originated' AND PurchaserType.purchaser_type IN (0, 1, 2, 3, 4, 8)"
         );
 
         for (String key : currentFilters.keySet())
