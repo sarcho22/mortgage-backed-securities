@@ -507,6 +507,9 @@ public class MainApplication {
                 {
                     keyVal = keyVal.replaceAll("\\s+", "_") + "_name";
                 }
+                if(key.equals("MSAMD")) {
+                    keyVal = "Location.msamd";
+                }
                 finalQuery.append(keyVal).append(" = ? ");
                 if(i<choices.size() - 1)
                 {
@@ -526,10 +529,20 @@ public class MainApplication {
             for(String key : currentFilters.keySet())
             {
                 List<String> choices = currentFilters.get(key);
-                for(String value : choices)
-                {
-                    statement.setString(index++,value);
+
+                if(key.equals("MSAMD")) {
+                    for(String value : choices) {
+                        String msamd_code = msamdDict.get(value);
+                        statement.setString(index++, msamd_code);
+                    }
                 }
+                else {
+                    for(String value : choices)
+                    {
+                        statement.setString(index++,value);
+                    }
+                }
+                
             }
             //System.out.println(statement.toString());
             ResultSet rs = statement.executeQuery();
@@ -538,7 +551,7 @@ public class MainApplication {
                 double totalLoanAmount = rs.getDouble("total_loan_amount");
 
                 System.out.println("Matching Rows: " + matchingRows);
-                System.out.println(" Total Loan Amount: " + totalLoanAmount);
+                System.out.println("Total Loan Amount: " + totalLoanAmount);
             }
         }
         catch (SQLException e) {
