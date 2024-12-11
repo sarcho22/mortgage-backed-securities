@@ -334,7 +334,7 @@ public class MainApplication {
                 filterStrings.add(filterName + "= " + filterValue);
 
             }
-            System.out.println(String.join(" AND ", filterStrings));
+            System.out.println(String.join(" AND\n", filterStrings));
         }
     }
 
@@ -659,6 +659,7 @@ public class MainApplication {
                         "LEFT JOIN County ON Location.county_code = County.county_code " +
                         "LEFT JOIN MSAMD ON Location.msamd = MSAMD.msamd " +
                         "LEFT JOIN PurchaserType ON Application.purchaser_type = PurchaserType.purchaser_type " +
+                        "LEFT JOIN Applicant ON Application.application_id = Applicant.application_id " +
                         "WHERE ActionTaken.action_taken_name = 'Loan originated' AND PurchaserType.purchaser_type IN (0, 1, 2, 3, 4, 8) "
         );
 
@@ -674,15 +675,56 @@ public class MainApplication {
                 if(key.equals("County")|| key.equals("Loan Type") || key.equals("Loan Purpose") || key.equals("Property Type"))
                 {
                     keyVal = keyVal.replaceAll("\\s+", "_") + "_name";
+                    finalQuery.append(keyVal).append(" = ? ");
+                    if(i<choices.size() - 1)
+                    {
+                        finalQuery.append("OR ");
+                    }
                 }
                 if(key.equals("MSAMD")) {
                     keyVal = "Location.msamd";
+                    finalQuery.append(keyVal).append(" = ? ");
+                    if(i<choices.size() - 1)
+                    {
+                        finalQuery.append("OR ");
+                    }
                 }
-                finalQuery.append(keyVal).append(" = ? ");
-                if(i<choices.size() - 1)
-                {
-                    finalQuery.append("OR ");
+                if(key.equals("Tract to MSAMD Income")) {
+                    keyVal = "(Location.tract_to_msamd_income::numeric)";
+                    if(i==0){
+                        finalQuery.append(keyVal).append(" BETWEEN ? ");
+                    }
+                    //checking even/odd because code is structured so that
+                    //we can check multiple ranges if needed
+                    else if(i%2==1){
+                        finalQuery.append("AND ? ");
+                        if(i < choices.size() - 1) {
+                            finalQuery.append("OR ");
+                        }
+                    }
+                    else if(i%2==0){
+                        finalQuery.append("? ");
+                    }
                 }
+                if(key.equals("Income to Debt Ratio")) {
+                    keyVal = "(applicant.applicant_income_000s / application.loan_amount_000s)";
+                    if(i==0){
+                        finalQuery.append(keyVal).append(" BETWEEN ? ");
+                    }
+                    //checking even/odd because code is structured so that
+                    //we can check multiple ranges if needed
+                    else if(i%2==1){
+                        finalQuery.append("AND ? ");
+                        if(i < choices.size() - 1) {
+                            finalQuery.append("OR ");
+                        }
+                    }
+                    else if(i%2==0){
+                        finalQuery.append("? ");
+                    }
+                }
+
+
             }
             finalQuery.append(") ");
         }
@@ -702,6 +744,12 @@ public class MainApplication {
                     for(String value : choices) {
                         String msamd_code = msamdDict.get(value);
                         statement.setString(index++, msamd_code);
+                    }
+                }
+                else if(key.equals("Tract to MSAMD Income") || key.equals("Income to Debt Ratio")) {
+                    for(String value : choices) {
+                        double converted = Double.parseDouble(value);
+                        statement.setDouble(index++, converted);
                     }
                 }
                 else {
