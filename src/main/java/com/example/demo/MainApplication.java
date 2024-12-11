@@ -81,7 +81,7 @@ public class MainApplication {
         // add filter NOT fully implemented (only worked on display, not functionality)
         System.out.println("\n\n=-=-=-=-Filter Types-=-=-=-=");
         // MAKE SURE TO REMOVE OPTION IF WE DONT IMPLEMENT ALL OF THESE
-        System.out.println("1. MSAMD\n2. Income to Debt Ratio\n3. County\n4. Loan Type\n5. Tract to MSAMD Income\n6. Loan Purpose\n7. Property Type\n");
+        System.out.println("1. MSAMD\n2. Income to Debt Ratio\n3. County\n4. Loan Type\n5. Tract to MSAMD Income\n6. Loan Purpose\n7. Property Type\n8. Owner Occupancy\n");
         System.out.print("Which filter would you like to add (enter a number)? ");
         String option = in.nextLine();
 
@@ -129,6 +129,10 @@ public class MainApplication {
             case "7":
                 // addingSpecFilter("Property Type", "Enter Property Type(s), type -1 when the list is complete: ");
                 addListFilter("Property Type");
+                break;
+            case "8":
+                // addingSpecFilter("Property Type", "Enter Property Type(s), type -1 when the list is complete: ");
+                addListFilter("Owner Occupancy");
                 break;
             default:
                 System.out.println("Invalid option! Back to main menu.");
@@ -548,7 +552,7 @@ public class MainApplication {
             for (int i = 0;i<choices.size();i++)
             {
                 String keyVal = key;
-                if(key.equals("County")|| key.equals("Loan Type") || key.equals("Loan Purpose") || key.equals("Property Type"))
+                if(key.equals("County")|| key.equals("Loan Type") || key.equals("Loan Purpose") || key.equals("Property Type") || key.equals("Owner Occupancy"))
                 {
                     keyVal = keyVal.replaceAll("\\s+", "_") + "_name";
                     finalQuery.append(keyVal).append(" = ? ");
@@ -710,6 +714,12 @@ public class MainApplication {
             "One-to-four family dwelling (other than manufactured housing)",
             "Manufactured housing",
             "Multifamily dwelling"
+        ));
+
+        allOptions.put("Owner Occupancy", Arrays.asList(
+                "Owner-occupied as a principal dwelling",
+                "Not owner-occupied as a principal dwelling",
+                "Not applicable"
         ));
     }
 
