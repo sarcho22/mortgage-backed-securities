@@ -30,7 +30,6 @@ public class MainApplication {
         // allCounties = retrieveCounties();
 
         while(true) {
-            buildingFinalQuery();
             displayMenu();
             String option = in.nextLine();
             
@@ -81,6 +80,7 @@ public class MainApplication {
         //System.out.println("   [insert active filters]");
         displayActiveFilters();
         // need to display which filters are active
+        buildingFinalQuery();
 
         System.out.println("\nAvailable Options:");
         System.out.println("1. Add Filter\n2. Delete Filter\n3. Calculate Rate\n4. Exit\n");
@@ -110,10 +110,10 @@ public class MainApplication {
 
     private static void addFilter() {
         // add filter NOT fully implemented (only worked on display, not functionality)
-        System.out.println("=-=-=-=-Filter Types-=-=-=-=");
+        System.out.println("\n\n=-=-=-=-Filter Types-=-=-=-=");
         // MAKE SURE TO REMOVE OPTION IF WE DONT IMPLEMENT ALL OF THESE
         System.out.println("1. MSAMD\n2. Income to Debt Ratio\n3. County\n4. Loan Type\n5. Tract to MSAMD Income\n6. Loan Purpose\n7. Property Type\n");
-        System.out.println("\nWhich filter would you like to add (enter a number)?");
+        System.out.print("Which filter would you like to add (enter a number)? ");
         String option = in.nextLine();
 
         switch(option) {
@@ -194,7 +194,7 @@ public class MainApplication {
         }
 
         // display option menu
-        System.out.printf("Available options for %s:\n", filter);
+        System.out.printf("\nAvailable options for %s:\n", filter);
         for(int i = 0; i < available.size(); i++) {
             System.out.printf("%d. %s\n", (i+1), available.get(i));
         }
@@ -524,7 +524,7 @@ public class MainApplication {
         int index = 1;
         String tempString = finalQuery.toString();
 
-        try(Connection tempConnection = DriverManager.getConnection(URL,USERNAME,PASSWORD)){
+        try(Connection tempConnection = getConnection()){
             PreparedStatement statement = tempConnection.prepareStatement(tempString);
             for(String key : currentFilters.keySet())
             {
@@ -550,7 +550,7 @@ public class MainApplication {
                 int matchingRows = rs.getInt("total_rows");
                 double totalLoanAmount = rs.getDouble("total_loan_amount");
 
-                System.out.println("Matching Rows: " + matchingRows);
+                System.out.println("\nMatching Rows: " + matchingRows);
                 System.out.println("Total Loan Amount: " + totalLoanAmount);
             }
         }
