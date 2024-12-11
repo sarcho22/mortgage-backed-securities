@@ -199,7 +199,7 @@ public class MainApplication {
             System.out.printf("%d. %s\n", (i+1), available.get(i));
         }
 
-        System.out.println("Which option would you like to filter for (enter numbers separated by commas: \"1,2,3\")?");
+        System.out.print("\nWhich option would you like to filter for (enter numbers separated by commas: \"1,2,3\"): ");
         String input = in.nextLine();
         String[] inputs = input.split(",");
 
@@ -339,60 +339,227 @@ public class MainApplication {
     }
 
     private static void deleteFilter() {
-        System.out.println("delete filter to be implemented...");
-    
-    }
+        if(currentFilters.isEmpty()) {
+            System.out.println("No filters to delete! Returning to main menu.");
+            return;
+        }
 
-    private static void calculateRate() {
-        // NEED TO UPDATE CALCULATE RATE ONCE ADD FILTER IS WORKING!!!
+        System.out.println("\nActive Filters:");
+        List<String> filterKeys = new ArrayList<String>(currentFilters.keySet());
 
-        String query = """
-            SELECT a.loan_amount_000s, a.rate_spread, a.lien_status, a.application_id
-            FROM application a JOIN ActionTaken at ON a.action_taken = at.action_taken
-            WHERE at.action_taken = 1 AND a.purchaser_type IN (0, 1, 2, 3, 4, 8);
-            """;
+        for(int i = 0; i < filterKeys.size(); i++) {
+            System.out.printf("%d. %s\n", (i+1), filterKeys.get(i));
+        }
+        System.out.printf("%d. Delete all filters\n\n", (filterKeys.size()+1));
+
+        System.out.print("Choose a filter to delete (enter a number): ");
+        String input = in.nextLine();
+        int choice = -1;
 
         try {
-            Connection conn = getConnection();
-            if(conn == null) {
-                System.out.println("Database connection failed...");
+            choice = Integer.parseInt(input);
+            if (choice < 1 || choice > filterKeys.size() + 1) {
+                System.out.println("Invalid choice! Returning to main menu.");
                 return;
             }
+        } catch(Exception e) {
+            System.err.println("Invalid input! Returning to main menu.");
+        }
 
-            PreparedStatement ps = conn.prepareStatement(query);
-            ResultSet rs = ps.executeQuery();
+        if(choice == filterKeys.size() + 1) {
+            currentFilters.clear();
+            System.out.println("All filters have been deleted.");
+        }
+        else {
+            String remove = filterKeys.get(choice-1);
+            currentFilters.remove(remove);
+            System.out.printf("Successfully removed %s filter(s). Returning to main menu.\n", remove);
+        }
+    }
 
+    // private static void calculateRate() {
+    //     // NEED TO UPDATE CALCULATE RATE ONCE ADD FILTER IS WORKING!!!
+
+    //     String query = """
+    //         SELECT a.loan_amount_000s, a.rate_spread, a.lien_status, a.application_id
+    //         FROM application a JOIN ActionTaken at ON a.action_taken = at.action_taken
+    //         WHERE at.action_taken = 1 AND a.purchaser_type IN (0, 1, 2, 3, 4, 8);
+    //         """;
+
+    //     try {
+    //         Connection conn = getConnection();
+    //         if(conn == null) {
+    //             System.out.println("Database connection failed...");
+    //             return;
+    //         }
+
+    //         PreparedStatement ps = conn.prepareStatement(query);
+    //         ResultSet rs = ps.executeQuery();
+
+    //         // variables to calculate weighted avg of rates (weighted by loan amt) AND sum of all mortgages as cost of securitization
+    //         double weightedRateSum = 0.0;
+    //         long loanSum = 0;
+
+    //         // making a list of application_ids to know which ones to update if user accepts
+    //         ArrayList<Integer> applicationIds = new ArrayList<>();
+
+    //         while(rs.next()) {
+    //             // multiplied loan amount by 1000s because it was stored in the database in 1000s!!!
+    //             int loanAmount = rs.getInt("loan_amount_000s") * 1000;
+    //             int lienStatus = rs.getInt("lien_status");
+
+    //             double rateSpread = rs.getDouble("rate_spread");
+
+    //             // checked https://docs.oracle.com/javase/8/docs/api/java/sql/ResultSet.html to see how to determine if a value is null
+    //             if(rs.wasNull()) {
+    //                 if(lienStatus == 1) {
+    //                     rateSpread = 1.5;
+    //                 }
+    //                 else{
+    //                     rateSpread = 3.5;
+    //                 }
+
+    //             }
+
+    //             rateSpread += 2.33; // account for base rate!!
+
+    //             loanSum += loanAmount;
+    //             weightedRateSum += rateSpread * loanAmount;
+
+    //             applicationIds.add(rs.getInt("application_id"));
+    //         }
+
+    //         if(loanSum > 0) { // just to make sure no division by 0
+    //             // to fully understand how the weighted avg rate works, i used this site:
+    //             // https://www.savingforcollege.com/article/how-to-calculate-the-weighted-average-interest-rate
+    //             double weightedRateAvg = weightedRateSum / loanSum;
+    //             System.out.println("\n=-=-=-=-Rate Calculation-=-=-=-=");
+    //             System.out.printf("   Total Loan Amount: %d\n   Weighted Average Rate: %.3f\n", loanSum, weightedRateAvg);
+
+    //             System.out.print("\nDo you accept this rate? (yes/no): ");
+    //             String response = in.nextLine().trim().toLowerCase();
+
+    //             if(response.equals("yes")) {
+    //                 updateDatabase(conn, applicationIds);
+    //             }
+    //             else if(response.equals("no")) {
+    //                 System.out.println("Rate declined. Returning to main menu.\n\n");
+    //             }
+    //         }
+    //         else if(loanSum < 0) {
+    //             System.out.println("Integer Overflow Error!");
+    //         }
+    //         else {
+    //             System.out.println("No matching mortgages found.");
+    //         }
+
+    //     } catch (Exception e) {
+    //         System.err.println("An error occurred during rate calculation: " + e.getMessage());
+    //         e.printStackTrace();
+    //     }
+    // }
+    private static void calculateRate() {
+        // FIX ONCE REST OF FILTERS ARE DONE
+		StringBuilder finalQuery = new StringBuilder(
+                "SELECT Application.loan_amount_000s, Application.rate_spread, Application.lien_status, Application.application_id " +
+                        "FROM Application " +
+                        "LEFT JOIN LoanType ON Application.loan_type = LoanType.loan_type " +
+                        "LEFT JOIN PropertyType ON Application.property_type = PropertyType.property_type " +
+                        "LEFT JOIN LoanPurpose ON Application.loan_purpose = LoanPurpose.loan_purpose " +
+                        "LEFT JOIN OwnerOccupancy ON Application.owner_occupancy = OwnerOccupancy.owner_occupancy " +
+                        "LEFT JOIN ActionTaken ON Application.action_taken = ActionTaken.action_taken " +
+                        "LEFT JOIN Location ON Application.application_id = Location.application_id " +
+                        "LEFT JOIN County ON Location.county_code = County.county_code " +
+                        "LEFT JOIN MSAMD ON Location.msamd = MSAMD.msamd " +
+                        "LEFT JOIN PurchaserType ON Application.purchaser_type = PurchaserType.purchaser_type " +
+                        "WHERE ActionTaken.action_taken_name = 'Loan originated' AND PurchaserType.purchaser_type IN (0, 1, 2, 3, 4, 8) "
+        );
+
+        for(String key : currentFilters.keySet()) {
+            finalQuery.append("AND (");
+            List<String> choices = currentFilters.get(key);
+            for (int i = 0; i < choices.size(); i++)
+            {
+                String keyVal = key;
+                if(key.equals("County")|| key.equals("Loan Type") || key.equals("Loan Purpose") || key.equals("Property Type"))
+                {
+                    keyVal = keyVal.replaceAll("\\s+", "_") + "_name";
+                }
+                if(key.equals("MSAMD")) {
+                    keyVal = "Location.msamd";
+                }
+                finalQuery.append(keyVal).append(" = ? ");
+                if(i < choices.size() - 1)
+                {
+                    finalQuery.append("OR ");
+                }
+            }
+            finalQuery.append(") ");
+        }
+        finalQuery.append(";");
+
+        int index = 1;
+        String tempString = finalQuery.toString();
+
+        try {
+        	Connection conn = getConnection();
+
+        	if(conn == null) {
+        		System.out.println("Database connection failed...");
+        		return;
+        	}
+
+            PreparedStatement stmt = conn.prepareStatement(tempString);
+            for(String key : currentFilters.keySet()) {
+                List<String> choices = currentFilters.get(key);
+
+                if(key.equals("MSAMD")) {
+                    for(String value : choices) {
+                        String msamd_code = msamdDict.get(value);
+                        stmt.setString(index++, msamd_code);
+                    }
+                }
+                else {
+                    for(String value : choices)
+                    {
+                        stmt.setString(index++, value);
+                    }
+                }
+                
+            }
+
+            ResultSet rs = stmt.executeQuery();
+            
             // variables to calculate weighted avg of rates (weighted by loan amt) AND sum of all mortgages as cost of securitization
             double weightedRateSum = 0.0;
             long loanSum = 0;
 
             // making a list of application_ids to know which ones to update if user accepts
-            ArrayList<Integer> applicationIds = new ArrayList<>();
+            List<Integer> applicationIDs = new ArrayList<>();
 
             while(rs.next()) {
-                // multiplied loan amount by 1000s because it was stored in the database in 1000s!!!
-                int loanAmount = rs.getInt("loan_amount_000s") * 1000;
-                int lienStatus = rs.getInt("lien_status");
+            	// multiplied loan amount by 1000s because it was stored in the database in 1000s!!!
+            	int loanAmount = rs.getInt("loan_amount_000s") * 1000;
+            	int lienStatus = rs.getInt("lien_status");
 
-                double rateSpread = rs.getDouble("rate_spread");
+            	double rateSpread = rs.getDouble("rate_spread");
 
-                // checked https://docs.oracle.com/javase/8/docs/api/java/sql/ResultSet.html to see how to determine if a value is null
-                if(rs.wasNull()) {
-                    if(lienStatus == 1) {
+            	// checked https://docs.oracle.com/javase/8/docs/api/java/sql/ResultSet.html to see how to determine if a value is null
+            	if(rs.wasNull()) {
+            		if(lienStatus == 1) {
                         rateSpread = 1.5;
                     }
                     else{
                         rateSpread = 3.5;
                     }
+            	}
 
-                }
+            	rateSpread += 2.33; // account for base rate!!
 
-                rateSpread += 2.33; // account for base rate!!
+            	loanSum += loanAmount;
+            	weightedRateSum += rateSpread * loanAmount;
 
-                loanSum += loanAmount;
-                weightedRateSum += rateSpread * loanAmount;
-
-                applicationIds.add(rs.getInt("application_id"));
+            	applicationIDs.add(rs.getInt("application_id"));
             }
 
             if(loanSum > 0) { // just to make sure no division by 0
@@ -400,13 +567,13 @@ public class MainApplication {
                 // https://www.savingforcollege.com/article/how-to-calculate-the-weighted-average-interest-rate
                 double weightedRateAvg = weightedRateSum / loanSum;
                 System.out.println("\n=-=-=-=-Rate Calculation-=-=-=-=");
-                System.out.printf("   Total Loan Amount: %d\n   Weighted Average Rate: %.3f\n", loanSum, weightedRateAvg);
+                System.out.printf("Total Loan Amount: %d\nWeighted Average Rate: %.3f\n", loanSum, weightedRateAvg);
 
                 System.out.print("\nDo you accept this rate? (yes/no): ");
                 String response = in.nextLine().trim().toLowerCase();
 
                 if(response.equals("yes")) {
-                    updateDatabase(conn, applicationIds);
+                    updateDatabase(conn, applicationIDs);
                 }
                 else if(response.equals("no")) {
                     System.out.println("Rate declined. Returning to main menu.\n\n");
@@ -418,15 +585,16 @@ public class MainApplication {
             else {
                 System.out.println("No matching mortgages found.");
             }
-
-        } catch (Exception e) {
-            System.err.println("An error occurred during rate calculation: " + e.getMessage());
+        }
+        catch (Exception e) {
+        	System.err.println("An error occurred during rate calculation: " + e.getMessage());
             e.printStackTrace();
         }
-    }
+	}
 
-    private static void updateDatabase(Connection conn, ArrayList<Integer> ids) {
+    private static void updateDatabase(Connection conn, List<Integer> ids) {
         // used https://docs.oracle.com/javase/tutorial/jdbc/basics/prepared.html to figure out how to use parameters in a query in jdbc
+
         String query = """
                 UPDATE Application
                 SET purchaser_type = 5
@@ -491,7 +659,7 @@ public class MainApplication {
                         "LEFT JOIN County ON Location.county_code = County.county_code " +
                         "LEFT JOIN MSAMD ON Location.msamd = MSAMD.msamd " +
                         "LEFT JOIN PurchaserType ON Application.purchaser_type = PurchaserType.purchaser_type " +
-                        "WHERE ActionTaken.action_taken_name = 'Loan originated' AND PurchaserType.purchaser_type IN (0, 1, 2, 3, 4, 8)"
+                        "WHERE ActionTaken.action_taken_name = 'Loan originated' AND PurchaserType.purchaser_type IN (0, 1, 2, 3, 4, 8) "
         );
 
         for (String key : currentFilters.keySet())
