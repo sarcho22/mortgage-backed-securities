@@ -317,7 +317,7 @@ public class MainApplication {
             List<String> choices = currentFilters.get(key);
             for(int i = 0; i < choices.size(); i++) {
                 String keyVal = key;
-                if(key.equals("County")|| key.equals("Loan Type") || key.equals("Loan Purpose") || key.equals("Property Type")) {
+                if(key.equals("County")|| key.equals("Loan Type") || key.equals("Loan Purpose") || key.equals("Property Type") || key.equals("Owner Occupancy")) {
                     keyVal = keyVal.replaceAll("\\s+", "_") + "_name";
                     finalQuery.append(keyVal).append(" = ? ");
                     if(i < choices.size()-1) {
