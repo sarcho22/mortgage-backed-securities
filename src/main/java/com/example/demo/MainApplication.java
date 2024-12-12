@@ -99,7 +99,7 @@ public class MainApplication {
         //String sexVal = allOptions.get("Sex").get(sex);
         int loanType = getChoiceInteger("What is the loan type?",allOptions.get("Loan Type"));
         loanType++;
-        String loanTypeVal = allOptions.get("Loan Type").get(loanType);
+        //String loanTypeVal = allOptions.get("Loan Type").get(loanType);
         int ethnicity = getChoiceInteger("What is the applicant ethnicity?",allOptions.get("Ethnicity"));
         if(ethnicity==0){
             ethnicity=1;
@@ -138,11 +138,13 @@ public class MainApplication {
             }
             //Assuming we got the location now, we go ahead and begin inserting into the application
             //We need to retrieve the application id that is created
-            String appSql = "INSERT INTO Application (loan_amount_000s,loan_type) " +
-                    "VALUES (?, ?) RETURNING application_id";
+            String appSql = "INSERT INTO Application (loan_amount_000s,loan_type, purchaser_type, action_taken) " +
+                    "VALUES (?, ?, ?, ?) RETURNING application_id";
             appStmt = newConn.prepareStatement(appSql);
             appStmt.setDouble(1, loanVal);
             appStmt.setInt(2, loanType);
+            appStmt.setInt(3, 0);
+            appStmt.setInt(4, 1);
             System.out.println("QUERY2: " + appStmt.toString());
 
             //get the application id
