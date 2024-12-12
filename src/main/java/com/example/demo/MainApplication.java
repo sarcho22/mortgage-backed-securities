@@ -40,6 +40,9 @@ public class MainApplication {
                     calculateRate();
                     break;
                 case "4":
+                    addMortgage();
+                    break;
+                case "5":
                     System.out.println("Thank you for using our MBS Packer. We hope to see you again soon!");
                     System.exit(0);
                 default:
@@ -73,8 +76,157 @@ public class MainApplication {
         buildingFinalQuery();
 
         System.out.println("\nAvailable Options:");
-        System.out.println("1. Add Filter\n2. Delete Filter\n3. Calculate Rate\n4. Exit\n");
+        System.out.println("1. Add Filter\n2. Delete Filter\n3. Calculate Rate\n4. Add Mortgage\n5. Exit\n");
         System.out.print("Choose an option (enter a number): ");
+    }
+
+    private static void addMortgage(){
+        System.out.println("Let's fill out the Mortgage Information!");
+        int income = getInteger("What is the applicant income in thousands of dollars? (EX: 75)");
+        double incomeVal = (double)income;
+        int loanAmount = getInteger("What is the loan amount in thousands of dollars? (EX: 100)");
+        double loanVal = (double)loanAmount;
+        int MSAMD = getChoiceInteger("What is the MSAMD?",allOptions.get("MSAMD"));
+        String MSAMDVal = msamdDict.get(allOptions.get("MSAMD").get(MSAMD));
+        int sex = getChoiceInteger("What is the applicant sex?",allOptions.get("Sex"));
+        if(sex==0){
+            sex=1;
+        }else if(sex==1){
+            sex=2;
+        }else if(sex==2){
+            sex=4;
+        }
+        //String sexVal = allOptions.get("Sex").get(sex);
+        int loanType = getChoiceInteger("What is the loan type?",allOptions.get("Loan Type"));
+        loanType++;
+        String loanTypeVal = allOptions.get("Loan Type").get(loanType);
+        int ethnicity = getChoiceInteger("What is the applicant ethnicity?",allOptions.get("Ethnicity"));
+        if(ethnicity==0){
+            ethnicity=1;
+        }else if(ethnicity==1){
+            ethnicity=2;
+        }else if(ethnicity==2){
+            ethnicity=4;
+        }
+        //String ethnicityVal = allOptions.get("Ethnicity").get(ethnicity);
+
+        Connection newConn = null;
+        PreparedStatement appStmt = null;
+        PreparedStatement applicantStmt = null;
+        PreparedStatement locationQueryStmt = null;
+        PreparedStatement locationInsertStmt = null;
+        try{
+            newConn = DriverManager.getConnection(URL,USERNAME,PASSWORD);
+            newConn.setAutoCommit(false);//To protect integrity in case of errors
+
+            //First we try to get the location with the MSAMD code in it
+            String locationQuery = "SELECT state_code, county_code " +
+                    "FROM Location WHERE msamd = ? LIMIT 1";
+            locationQueryStmt = newConn.prepareStatement(locationQuery);
+            locationQueryStmt.setString(1, MSAMDVal);
+
+            System.out.println("QUERY1: " + locationQueryStmt.toString());
+            ResultSet locationRs = locationQueryStmt.executeQuery();
+
+            String stateCode = "";
+            String countyCode = "";
+            if (locationRs.next()) {
+                stateCode = locationRs.getString("state_code");
+                countyCode = locationRs.getString("county_code");
+            } else {
+                throw new SQLException("No location found for msamd: " + MSAMDVal);
+            }
+            //Assuming we got the location now, we go ahead and begin inserting into the application
+            //We need to retrieve the application id that is created
+            String appSql = "INSERT INTO Application (loan_amount_000s,loan_type) " +
+                    "VALUES (?, ?) RETURNING application_id";
+            appStmt = newConn.prepareStatement(appSql);
+            appStmt.setDouble(1, loanVal);
+            appStmt.setInt(2, loanType);
+            System.out.println("QUERY2: " + appStmt.toString());
+
+            //get the application id
+            ResultSet rs = appStmt.executeQuery();
+            int applicationId = 0;
+            if (rs.next()) {
+                applicationId = rs.getInt("application_id");
+            }
+
+            //Assuming things are still working, we now proceed to insert into the applicant table
+            String applicantSql = "INSERT INTO Applicant (application_id, applicant_ethnicity, applicant_sex, applicant_income_000s) " +
+                    "VALUES (?, ?, ?, ?)";
+            applicantStmt = newConn.prepareStatement(applicantSql);
+            applicantStmt.setInt(1, applicationId);
+            applicantStmt.setInt(2, ethnicity);
+            applicantStmt.setInt(3, sex);
+            applicantStmt.setDouble(4, incomeVal);
+            System.out.println("QUERY3: " + applicantStmt.toString());
+            applicantStmt.executeUpdate();
+
+            String locationInsertSql = "INSERT INTO Location (application_id, msamd, state_code, county_code) " +
+                    "VALUES (?, ?, ?, ?)";
+            locationInsertStmt = newConn.prepareStatement(locationInsertSql);
+            locationInsertStmt.setInt(1, applicationId);
+            locationInsertStmt.setString(2, MSAMDVal);
+            locationInsertStmt.setString(3, stateCode);
+            locationInsertStmt.setString(4, countyCode);
+            System.out.println("QUERY4: " + locationInsertStmt.toString());
+            locationInsertStmt.executeUpdate();
+
+
+            //commit transaction, if we made it this far, means it didn't blow up!
+            newConn.commit();
+            System.out.println("New mortgage record inserted successfully!");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }finally {
+            try {
+                //close the connections we made!
+                if (locationQueryStmt != null) locationQueryStmt.close();
+                if (locationInsertStmt != null) locationInsertStmt.close();
+                if (appStmt != null) appStmt.close();
+                if (applicantStmt != null) applicantStmt.close();
+                if (newConn != null) newConn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+    }
+
+    private static int getInteger(String Instructions){
+        while(true){
+            System.out.println(Instructions);//need only print once
+            String input = in.nextLine();
+            try{
+                return Integer.parseInt(input);
+            }catch(NumberFormatException e){
+                System.out.println("Please enter an integer!");//print warning and loop again
+            }
+        }
+    }
+
+    private static int getChoiceInteger(String Instructions, List<String> choices)
+    {
+        while(true) {
+            System.out.println(Instructions);
+            for (int i = 0; i < choices.size(); i++) {
+                System.out.printf("%d. %s\n", (i + 1), choices.get(i));
+            }
+            System.out.print("\nSelect the number that matches your option: ");
+            String input = in.nextLine();
+            try {
+                int index = Integer.parseInt(input) - 1;
+                if (index >= 0 && index < choices.size()) {
+                    return index;
+                } else {
+                    System.out.println("Invalid selection. Please choose a number between 1 and " + choices.size() + ".");
+                }
+            }catch (NumberFormatException e) {
+                System.out.println("Invalid input. Please enter a valid integer.");
+            }
+        }
     }
 
     private static void addFilter() {
@@ -417,7 +569,7 @@ public class MainApplication {
 
             while(rs.next()) {
             	// multiplied loan amount by 1000s because it was stored in the database in 1000s!!!
-            	int loanAmount = rs.getInt("loan_amount_000s") * 1000;
+            	long loanAmount = rs.getLong("loan_amount_000s") * 1000;
             	int lienStatus = rs.getInt("lien_status");
 
             	double rateSpread = rs.getDouble("rate_spread");
@@ -644,10 +796,10 @@ public class MainApplication {
             ResultSet rs = statement.executeQuery();
             if(rs.next()) {
                 int matchingRows = rs.getInt("total_rows");
-                double totalLoanAmount = rs.getDouble("total_loan_amount") * 1000;
+                long totalLoanAmount = rs.getLong("total_loan_amount") * 1000;
 
                 System.out.println("\nMatching Rows: " + matchingRows);
-                System.out.println("Total Loan Amount: " + (int)(totalLoanAmount));
+                System.out.println("Total Loan Amount: " + (long)(totalLoanAmount));
             }
         }
         catch (SQLException e) {
@@ -720,6 +872,18 @@ public class MainApplication {
                 "Owner-occupied as a principal dwelling",
                 "Not owner-occupied as a principal dwelling",
                 "Not applicable"
+        ));
+
+        allOptions.put("Ethnicity", Arrays.asList(
+                "Hispanic or Latino",//1
+                "Not Hispanic or Latino",//2
+                "Not applicable"//4
+        ));
+
+        allOptions.put("Sex", Arrays.asList(
+                "Male",//1
+                "Female",//2
+                "Not applicable"//4
         ));
     }
 
