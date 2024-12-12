@@ -354,6 +354,7 @@ public class MainApplication {
             if(failed) {
                 System.out.println("The rest of the filters couldn't be applied.");
             }
+            System.out.println();
         }
         else {
             System.out.println("No filters were successfully applied.");
@@ -376,7 +377,7 @@ public class MainApplication {
             else {
                 List<String> range = Arrays.asList("" + min, "" + max);
                 currentFilters.put(filter, range);
-                System.out.printf("Added %s filter: between %f and %f.", filter, min, max);
+                System.out.printf("Added %s filter: between %f and %f.\n\n", filter, min, max);
             }
 
         } catch (Exception e) {
