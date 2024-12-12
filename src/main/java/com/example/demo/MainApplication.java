@@ -51,21 +51,6 @@ public class MainApplication {
         }
     }
 
-    // referenced https://mkyong.com/jdbc/how-do-connect-to-postgresql-with-jdbc-driver-java/ to establish connection
-    private static Connection getConnection() {
-        try {
-            Connection conn = DriverManager.getConnection(URL, USERNAME, PASSWORD);
-            return conn;
-
-        } catch (SQLException e) {
-            System.err.format("SQL State: %s\n%s", e.getSQLState(), e.getMessage());
-            return null;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
     // display the menu for the three functionalities
     private static void displayMenu() {
         System.out.println("\n=-=-=-=-=-Main Menu-=-=-=-=-=");
@@ -84,10 +69,13 @@ public class MainApplication {
         System.out.println("Let's fill out the Mortgage Information!");
         int income = getInteger("What is the applicant income in thousands of dollars? (EX: 75)");
         double incomeVal = (double)income;
+        System.out.println();
         int loanAmount = getInteger("What is the loan amount in thousands of dollars? (EX: 100)");
         double loanVal = (double)loanAmount;
+        System.out.println();
         int MSAMD = getChoiceInteger("What is the MSAMD?",allOptions.get("MSAMD"));
         String MSAMDVal = msamdDict.get(allOptions.get("MSAMD").get(MSAMD));
+        System.out.println();
         int sex = getChoiceInteger("What is the applicant sex?",allOptions.get("Sex"));
         if(sex==0){
             sex=1;
@@ -99,6 +87,7 @@ public class MainApplication {
         //String sexVal = allOptions.get("Sex").get(sex);
         int loanType = getChoiceInteger("What is the loan type?",allOptions.get("Loan Type"));
         loanType++;
+        System.out.println();
         //String loanTypeVal = allOptions.get("Loan Type").get(loanType);
         int ethnicity = getChoiceInteger("What is the applicant ethnicity?",allOptions.get("Ethnicity"));
         if(ethnicity==0){
@@ -108,6 +97,7 @@ public class MainApplication {
         }else if(ethnicity==2){
             ethnicity=4;
         }
+        System.out.println();
         //String ethnicityVal = allOptions.get("Ethnicity").get(ethnicity);
 
         Connection newConn = null;
@@ -116,7 +106,7 @@ public class MainApplication {
         PreparedStatement locationQueryStmt = null;
         PreparedStatement locationInsertStmt = null;
         try{
-            newConn = DriverManager.getConnection(URL,USERNAME,PASSWORD);
+            newConn = DriverManager.getConnection(URL, USERNAME, PASSWORD);
             newConn.setAutoCommit(false);//To protect integrity in case of errors
 
             //First we try to get the location with the MSAMD code in it
@@ -178,10 +168,18 @@ public class MainApplication {
 
             //commit transaction, if we made it this far, means it didn't blow up!
             newConn.commit();
-            System.out.println("New mortgage record inserted successfully!");
+            System.out.println("New mortgage record inserted successfully!\n");
         } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }finally {
+            try {
+                e.printStackTrace();
+                if(newConn != null) {
+                    newConn.rollback();
+                }
+            } catch (SQLException e2) {
+                e2.printStackTrace();
+            }
+            System.err.println("Error occurred while adding new mortgage: " + e.getMessage());
+        } finally {
             try {
                 //close the connections we made!
                 if (locationQueryStmt != null) locationQueryStmt.close();
@@ -373,7 +371,7 @@ public class MainApplication {
                 System.out.println("Min can't be greater than max! Returning to main menu.");
             }
             else if(min < 0 || max < 0) {
-                System.out.println("No negative numbers! Returning to main menu.");
+                System.out.println("No negative numbers! Returning to main menu.\n");
             }
             else {
                 List<String> range = Arrays.asList("" + min, "" + max);
@@ -382,7 +380,7 @@ public class MainApplication {
             }
 
         } catch (Exception e) {
-            System.out.println("Invalid input! Returning to main menu.");
+            System.out.println("Invalid input! Returning to main menu.\n");
         }
     }
 
@@ -412,7 +410,7 @@ public class MainApplication {
 
     private static void deleteFilter() {
         if(currentFilters.isEmpty()) {
-            System.out.println("No filters to delete! Returning to main menu.");
+            System.out.println("No filters to delete! Returning to main menu.\n");
             return;
         }
 
@@ -431,11 +429,11 @@ public class MainApplication {
         try {
             choice = Integer.parseInt(input);
             if (choice < 1 || choice > filterKeys.size() + 1) {
-                System.out.println("Invalid choice! Returning to main menu.");
+                System.out.println("Invalid choice! Returning to main menu.\n");
                 return;
             }
         } catch(Exception e) {
-            System.err.println("Invalid input! Returning to main menu.");
+            System.err.println("Invalid input! Returning to main menu.\n");
         }
 
         if(choice == filterKeys.size() + 1) {
@@ -528,15 +526,13 @@ public class MainApplication {
         int index = 1;
         String tempString = finalQuery.toString();
 
+        Connection conn = null;
+        PreparedStatement stmt = null;
+
         try {
-        	Connection conn = getConnection();
+        	conn = DriverManager.getConnection(URL, USERNAME, PASSWORD);
+            stmt = conn.prepareStatement(tempString);
 
-        	if(conn == null) {
-        		System.out.println("Database connection failed...");
-        		return;
-        	}
-
-            PreparedStatement stmt = conn.prepareStatement(tempString);
             for(String key : currentFilters.keySet()) {
                 List<String> choices = currentFilters.get(key);
 
@@ -605,12 +601,15 @@ public class MainApplication {
                 String response = in.nextLine().trim().toLowerCase();
 
                 if(response.equals("yes")) {
-                    updateDatabase(conn, applicationIDs);
+                    updateDatabase(applicationIDs);
                     System.out.println("Thank you for using our MBS Packer. We hope to see you again soon!");
                     System.exit(0);
                 }
                 else if(response.equals("no")) {
-                    System.out.println("Rate declined. Returning to main menu.\n\n");
+                    System.out.println("Rate declined. Returning to main menu.\n");
+                }
+                else {
+                    System.out.println("Invalid option! Returning to main menu.\n");
                 }
             }
             else if(loanSum < 0) {
@@ -619,24 +618,44 @@ public class MainApplication {
             else {
                 System.out.println("No matching mortgages found.");
             }
-        }
-        catch (Exception e) {
-        	System.err.println("An error occurred during rate calculation: " + e.getMessage());
+        } catch (SQLException e2) {
+            e2.printStackTrace();
+        } catch (Exception e) {
+        	System.err.println("Error occurred during rate calculation: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            try {
+                if(stmt != null) {
+                    stmt.close();
+                }
+                if(conn != null) {
+                    conn.close();
+                }
+            } catch(SQLException se) {
+                se.printStackTrace();
+            } catch(Exception e) {
+                e.printStackTrace();
+            }
+
         }
 	}
 
-    private static void updateDatabase(Connection conn, List<Integer> ids) {
+    private static void updateDatabase(List<Integer> ids) {
         // used https://docs.oracle.com/javase/tutorial/jdbc/basics/prepared.html to figure out how to use parameters in a query in jdbc
-
+        
         String query = """
                 UPDATE Application
                 SET purchaser_type = 5
                 WHERE application_id = ?;
                 """;
+
+        Connection conn = null;
+        PreparedStatement stmt = null;
         
         try {
-            PreparedStatement stmt = conn.prepareStatement(query);
+            conn = DriverManager.getConnection(URL, USERNAME, PASSWORD);
+            conn.setAutoCommit(false);
+            stmt = conn.prepareStatement(query);
             // used https://www.geeksforgeeks.org/how-to-execute-multiple-sql-commands-on-a-database-simultaneously-in-jdbc/ to figure out how to run multiple queries instead of running each one individually
             // also used https://docs.raima.com/rdm/15_2/ug/jdbc/Statement/Method/executeBatch.htm to figure out how to determine if the updates were successful or failed
 
@@ -646,24 +665,47 @@ public class MainApplication {
             }
             int[] updateStatus = stmt.executeBatch();
             int count = 0;
-            ArrayList<Integer> failed = new ArrayList<Integer>();
+            boolean failed = false;
 
             for(int i = 0; i < updateStatus.length; i++) {
                 if(updateStatus[i] == Statement.EXECUTE_FAILED) {
-                    failed.add(ids.get(i));
+                    failed = true;
                 }
                 else {
                     count++;
                 }
             }
 
-            System.out.printf("Successfully updated %d loans to 'Private Securitization'!\n", count);
-            if(!failed.isEmpty()) {
-                System.err.println("Failed to update the following application IDs: " + failed);
+            if(failed) {
+                conn.rollback();
+            }
+            else{
+                System.out.printf("Successfully updated %d loans to 'Private Securitization'!\n", count);
+                conn.commit();
             }
 
         } catch (SQLException e) {
-            System.err.println("Failed to update database: " + e.getMessage());
+            System.err.println("Error occurred during securitization: " + e.getMessage());
+            try {
+                if(conn != null) {   
+                    conn.rollback();
+                }
+            } catch(SQLException se) {
+                se.printStackTrace();
+            }
+        } finally {
+            try {
+                if(conn != null) {
+                    conn.close();
+                }
+                if(stmt != null) {
+                    stmt.close();
+                }
+            } catch(SQLException se) {
+                se.printStackTrace();
+            } catch(Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -768,8 +810,12 @@ public class MainApplication {
         int index = 1;
         String tempString = finalQuery.toString();
 
-        try(Connection tempConnection = getConnection()){
-            PreparedStatement statement = tempConnection.prepareStatement(tempString);
+        Connection tempConnection = null;
+        PreparedStatement statement = null;
+
+        try{
+            tempConnection = DriverManager.getConnection(URL, USERNAME, PASSWORD);
+            statement = tempConnection.prepareStatement(tempString);
             for(String key : currentFilters.keySet())
             {
                 List<String> choices = currentFilters.get(key);
@@ -804,8 +850,22 @@ public class MainApplication {
                 System.out.println("Total Loan Amount: " + (long)(totalLoanAmount));
             }
         }
-        catch (SQLException e) {
+        catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            try {
+                if(tempConnection != null) {
+                    tempConnection.close();
+                }
+                if(statement != null) {
+                    statement.close();
+                }
+            } catch(SQLException se) {
+                se.printStackTrace();
+            } catch(Exception e2) {
+                e2.printStackTrace();
+            }
+
         }
 
         return null;
