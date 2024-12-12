@@ -125,7 +125,7 @@ public class MainApplication {
             locationQueryStmt = newConn.prepareStatement(locationQuery);
             locationQueryStmt.setString(1, MSAMDVal);
 
-            System.out.println("QUERY1: " + locationQueryStmt.toString());
+            //System.out.println("QUERY1: " + locationQueryStmt.toString());
             ResultSet locationRs = locationQueryStmt.executeQuery();
 
             String stateCode = "";
@@ -145,7 +145,7 @@ public class MainApplication {
             appStmt.setInt(2, loanType);
             appStmt.setInt(3, 0);
             appStmt.setInt(4, 1);
-            System.out.println("QUERY2: " + appStmt.toString());
+            //System.out.println("QUERY2: " + appStmt.toString());
 
             //get the application id
             ResultSet rs = appStmt.executeQuery();
@@ -162,7 +162,7 @@ public class MainApplication {
             applicantStmt.setInt(2, ethnicity);
             applicantStmt.setInt(3, sex);
             applicantStmt.setDouble(4, incomeVal);
-            System.out.println("QUERY3: " + applicantStmt.toString());
+            //System.out.println("QUERY3: " + applicantStmt.toString());
             applicantStmt.executeUpdate();
 
             String locationInsertSql = "INSERT INTO Location (application_id, msamd, state_code, county_code) " +
@@ -172,7 +172,7 @@ public class MainApplication {
             locationInsertStmt.setString(2, MSAMDVal);
             locationInsertStmt.setString(3, stateCode);
             locationInsertStmt.setString(4, countyCode);
-            System.out.println("QUERY4: " + locationInsertStmt.toString());
+            //System.out.println("QUERY4: " + locationInsertStmt.toString());
             locationInsertStmt.executeUpdate();
 
 
