@@ -20,6 +20,25 @@ public class MainApplication {
     private static Map<String, List<String>> allOptions = new HashMap<>();
 
     public static void main(String[] args) {
+
+        Connection dbConnection = null;
+        Statement dbStatement = null;
+        try{
+            dbConnection = DriverManager.getConnection(URL,USERNAME,PASSWORD);
+            dbStatement =dbConnection.createStatement();
+            String serializeDatabase = "ALTER DATABASE mbs SET DEFAULT_TRANSACTION_ISOLATION TO 'serializable';";
+            dbStatement.executeUpdate(serializeDatabase);
+        }catch(SQLException e){
+            e.printStackTrace();
+        }finally{
+            try{
+                dbStatement.close();
+                dbConnection.close();
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+
+        }
         initFilterOptions();
         initDict();
 
@@ -77,6 +96,7 @@ public class MainApplication {
         String MSAMDVal = msamdDict.get(allOptions.get("MSAMD").get(MSAMD));
         System.out.println();
         int sex = getChoiceInteger("What is the applicant sex?",allOptions.get("Sex"));
+        //Jank way of doing it, but we are setting the index = to the code value in the database.
         if(sex==0){
             sex=1;
         }else if(sex==1){
@@ -230,9 +250,8 @@ public class MainApplication {
     }
 
     private static void addFilter() {
-        // add filter NOT fully implemented (only worked on display, not functionality)
         System.out.println("\n\n=-=-=-=-Filter Types-=-=-=-=");
-        // MAKE SURE TO REMOVE OPTION IF WE DONT IMPLEMENT ALL OF THESE
+        // All 7 types + occupancy implemented
         System.out.println("1. MSAMD\n2. Income to Debt Ratio\n3. County\n4. Loan Type\n5. Tract to MSAMD Income\n6. Loan Purpose\n7. Property Type\n8. Owner Occupancy\n");
         System.out.print("Which filter would you like to add (enter a number)? ");
         String option = in.nextLine();
@@ -712,18 +731,6 @@ public class MainApplication {
 
     private static String buildingFinalQuery()
     {
-        /*
-        Couple of issues:
-        1. The key values as we store them in currentFilters don't line up with column names
-        2. While we can fix this with an if statement as seen below, it doesnt work for MSAMD
-           MSAMD is a mix of 2 columns, so you would need to dynamically alter which column goes in the query.
-        3. income to debt ratio and tract to msamd income need to be considered as separate cases bc
-           they use between and also we need to calculate income to debt ratio.
-        4. We're still missing the 8th filter.
-         */
-
-
-
         StringBuilder finalQuery = new StringBuilder(
                 "SELECT COUNT(*) AS total_rows, SUM(Application.loan_amount_000s) AS total_loan_amount " +
                         "FROM Application " +
